@@ -70,12 +70,13 @@ export default class App extends Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     alignItems: 'center',
-    backgroundColor: '#F5FCFF',
+    backgroundColor: '#BBDEFB',
   },
   currentDay: {
-    backgroundColor: '#CCCCFF',
+    backgroundColor: '#90CAF9',
+    alignSelf: 'stretch',
     margin: 10,
   },
   header: {
