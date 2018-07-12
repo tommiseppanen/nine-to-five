@@ -18,6 +18,8 @@ export default class App extends Component {
   async updateTimeData() {
     console.log("testing");
     let data = [];
+    const currentDate = moment(new Date()).format('dddd DD.MM.');
+    let currentStartTime;
     try {      
       const value = await AsyncStorage.getItem('times');
       console.log(value);
@@ -25,17 +27,22 @@ export default class App extends Component {
       if (value !== null) {
         timeData = JSON.parse(value);  
       }
-      timeData.push(new Date().toJSON());
+      const currentTime = new Date().toJSON();
+      timeData.push(currentTime);
       console.log(timeData);
       await AsyncStorage.setItem('times', JSON.stringify(timeData));
       var grouped = _.groupBy(timeData, d => d.slice(0,10));
-      Object.keys(grouped).map(function(key, index) {
-        data.push(moment(grouped[key][0]).format('dddd DD.MM HH:mm'));
+      Object.keys(grouped).forEach(function(key, index) {
+        if (key !== currentTime.slice(0,10))
+          data.push(moment(grouped[key][0]).format('dddd DD.MM HH:mm'));
+        else
+          currentStartTime = moment(grouped[key][0]);
       });
     } catch (error) {
         console.log(error);
     }
-    this.setState({ arrivalTimes: data});
+    const currentTimeString = currentStartTime.format('HH:mm') + " - " + currentStartTime.add(480, 'minutes').format('HH:mm');
+    this.setState({ arrivalTimes: data, currentDate: currentDate, currentTimeString: currentTimeString});
   }
   
   async componentDidMount() {
@@ -47,12 +54,15 @@ export default class App extends Component {
       <View style={styles.container}>
         <View style={styles.currentDay}>
           <Text style={styles.header}>
-            Pe 09:15 - 17:15
+            {this.state.currentDate}
           </Text>
-          <Text style={styles.startTime}>
+          <Text style={styles.headerDetail}>
+            {this.state.currentTimeString} (7.5h)
+          </Text>
+          <Text style={styles.headerDetail}>
             17:45 (8h)
           </Text>
-          <Text style={styles.startTime}>
+          <Text style={styles.headerDetail}>
             18:15 (8.5h)
           </Text>
         </View>
@@ -72,21 +82,26 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-start',
     alignItems: 'center',
-    backgroundColor: '#BBDEFB',
+    backgroundColor: '#FFFFFF',
   },
   currentDay: {
-    backgroundColor: '#90CAF9',
+    backgroundColor: '#64B5F6',
     alignSelf: 'stretch',
-    margin: 10,
+    padding: 10,
   },
   header: {
-    fontSize: 20,
+    fontSize: 22,
     textAlign: 'center',
     margin: 10,
+  },
+  headerDetail: {
+    fontSize: 16,
+    textAlign: 'center',
+    margin: 3,
   },
   startTime: {
     textAlign: 'center',
     color: '#333333',
-    marginBottom: 5,
+    margin: 5,
   },
 });
