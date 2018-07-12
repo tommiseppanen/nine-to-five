@@ -20,6 +20,7 @@ export default class App extends Component {
     let data = [];
     const currentDate = moment(new Date()).format('dddd DD.MM.');
     let currentStartTime;
+    const currentTimeJson = new Date().toJSON();
     try {      
       const value = await AsyncStorage.getItem('times');
       console.log(value);
@@ -27,13 +28,12 @@ export default class App extends Component {
       if (value !== null) {
         timeData = JSON.parse(value);  
       }
-      const currentTime = new Date().toJSON();
-      timeData.push(currentTime);
+      timeData.push(currentTimeJson);
       console.log(timeData);
       await AsyncStorage.setItem('times', JSON.stringify(timeData));
       var grouped = _.groupBy(timeData, d => d.slice(0,10));
       Object.keys(grouped).forEach(function(key, index) {
-        if (key !== currentTime.slice(0,10))
+        if (key !== currentTimeJson.slice(0,10))
           data.push(moment(grouped[key][0]).format('dddd DD.MM HH:mm'));
         else
           currentStartTime = moment(grouped[key][0]);
@@ -41,8 +41,18 @@ export default class App extends Component {
     } catch (error) {
         console.log(error);
     }
-    const currentTimeString = currentStartTime.format('HH:mm') + " - " + currentStartTime.add(480, 'minutes').format('HH:mm');
-    this.setState({ arrivalTimes: data, currentDate: currentDate, currentTimeString: currentTimeString});
+    const currentTimeString = currentStartTime.format('HH:mm') + " - " + currentStartTime.clone().add(480, 'minutes').format('HH:mm');
+    const minutes = moment.duration(moment(currentTimeJson).diff(currentStartTime)).asMinutes();
+    const baseLength = Math.floor(minutes / 30)*30;
+    const target1 = currentStartTime.clone().add(baseLength + 30, 'minutes');
+    const target2 = currentStartTime.clone().add(baseLength + 60, 'minutes');
+
+    this.setState({ arrivalTimes: data, currentDate: currentDate, 
+      currentTimeString: currentTimeString, primaryTarget: target1.format('HH:mm'), 
+      secondaryTarget: target2.format('HH:mm'),
+      primaryLength: Math.floor(moment.duration(target1.diff(currentStartTime)).asMinutes())/60,
+      secondaryLength: Math.floor(moment.duration(target2.diff(currentStartTime)).asMinutes())/60
+    });
   }
   
   async componentDidMount() {
@@ -60,10 +70,10 @@ export default class App extends Component {
             {this.state.currentTimeString} (7.5h)
           </Text>
           <Text style={styles.headerDetail}>
-            17:45 (8h)
+            {this.state.primaryTarget} ({this.state.primaryLength}h)
           </Text>
           <Text style={styles.headerDetail}>
-            18:15 (8.5h)
+            {this.state.secondaryTarget} ({this.state.secondaryLength}h)
           </Text>
         </View>
         {this.state.arrivalTimes.map((time) =>
