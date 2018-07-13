@@ -13,6 +13,7 @@ export default class App extends Component {
   constructor(props){
     super(props);
     this.state = { arrivalTimes: []}
+    this.dataKey = 'start-times';
   }
 
   async componentDidMount() {
@@ -49,19 +50,20 @@ export default class App extends Component {
     let currentStartTime;
 
     try {      
-      const value = await AsyncStorage.getItem('times');
+      const value = await AsyncStorage.getItem(this.dataKey);
       let timeData = [];
       if (value !== null) {
-        timeData = JSON.parse(value);  
-      }    
-      
-      let grouped = _.groupBy(timeData, d => d.slice(0,10));
-      Object.keys(grouped).forEach(function(key, index) {
-        if (key !== currentTimeJson.slice(0,10))
-          data.push(moment(grouped[key][0]).format('dddd DD.MM HH:mm'));
-        else
-          currentStartTime = moment(grouped[key][0]);
-      });
+        timeData = JSON.parse(value);
+
+        data = timeData.reverse();
+        if (data.length > 0 && data[0].slice(0,10) == currentTimeJson.slice(0,10))
+        {
+          currentStartTime = moment(data[0]);
+          data.shift();
+        }
+        
+        data = data.map(d => moment(d).format('dddd DD.MM HH:mm'));
+      }
     } catch (error) {
         console.log(error);
     }
@@ -71,8 +73,9 @@ export default class App extends Component {
 
   async storeNewTime(oldTimeData, newTimeJson)
   {
-    oldTimeData.push(newTimeJson);
-    await AsyncStorage.setItem('times', JSON.stringify(oldTimeData));
+    let clonedTimeData = oldTimeData.slice(0);
+    clonedTimeData.push(newTimeJson);
+    await AsyncStorage.setItem(this.dataKey, JSON.stringify(clonedTimeData));
   }
 
   calculateTimes(currentStartTime, currentTimeJson) {
