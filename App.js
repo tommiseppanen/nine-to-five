@@ -16,11 +16,10 @@ export default class App extends Component {
   }
 
   async componentDidMount() {
-    await this.updateTimeData();
+    await this.updateState();
   }
 
-  async updateTimeData() {  
-    const currentDate = moment(new Date()).format('dddd DD.MM.');
+  async updateState() {  
     const currentTimeJson = new Date().toJSON();   
     const result = await this.readData(currentTimeJson);
     
@@ -34,22 +33,13 @@ export default class App extends Component {
       currentStartTime = result.currentStartTime;
     }    
 
-    const currentTimeString = currentStartTime.format('HH:mm') + " - " + currentStartTime.clone().add(480, 'minutes').format('HH:mm');
-    const minutes = moment.duration(moment(currentTimeJson).diff(currentStartTime)).asMinutes();
-    const baseLength = Math.floor(minutes / 30)*30;
-    const target1 = currentStartTime.clone().add(baseLength + 30, 'minutes');
-    const target2 = currentStartTime.clone().add(baseLength + 60, 'minutes');
-    let length = Math.floor(moment.duration(target1.diff(currentStartTime)).asMinutes())/60;
-    
-    //reduce lunch break
-    if (length > 4.0)
-      length -= 0.5;
+    const times = this.calculateTimes(currentStartTime, currentTimeJson);
 
-    this.setState({ arrivalTimes: result.data, currentDate: currentDate, 
-      currentTimeString: currentTimeString, primaryTarget: target1.format('HH:mm'), 
-      secondaryTarget: target2.format('HH:mm'),
-      primaryLength: length,
-      secondaryLength: length+0.5
+    this.setState({ arrivalTimes: result.data, currentDate: moment(new Date()).format('dddd DD.MM.'), 
+      currentTimeString: times.currentTimeString, primaryTarget: times.primaryTarget.format('HH:mm'), 
+      secondaryTarget: times.secondaryTarget.format('HH:mm'),
+      primaryLength: times.length,
+      secondaryLength: times.length+0.5
     });
   }
 
@@ -83,6 +73,21 @@ export default class App extends Component {
   {
     oldTimeData.push(newTimeJson);
     await AsyncStorage.setItem('times', JSON.stringify(oldTimeData));
+  }
+
+  calculateTimes(currentStartTime, currentTimeJson) {
+    const currentTimeString = currentStartTime.format('HH:mm') + " - " + currentStartTime.clone().add(480, 'minutes').format('HH:mm');
+    const minutes = moment.duration(moment(currentTimeJson).diff(currentStartTime)).asMinutes();
+    const baseLength = Math.floor(minutes / 30)*30;
+    const target1 = currentStartTime.clone().add(baseLength + 30, 'minutes');
+    const target2 = currentStartTime.clone().add(baseLength + 60, 'minutes');
+    let length = Math.floor(moment.duration(target1.diff(currentStartTime)).asMinutes())/60;
+
+    //reduce lunch break
+    if (length > 4.0)
+    length -= 0.5;
+
+    return {currentTimeString: currentTimeString, primaryTarget: target1, secondaryTarget: target2, length: length}
   }
 
   render() {
