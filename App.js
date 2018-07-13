@@ -46,12 +46,17 @@ export default class App extends Component {
     const baseLength = Math.floor(minutes / 30)*30;
     const target1 = currentStartTime.clone().add(baseLength + 30, 'minutes');
     const target2 = currentStartTime.clone().add(baseLength + 60, 'minutes');
+    let length = Math.floor(moment.duration(target1.diff(currentStartTime)).asMinutes())/60;
+    
+    //reduce lunch break
+    if (length > 4.0)
+      length -= 0.5;
 
     this.setState({ arrivalTimes: data, currentDate: currentDate, 
       currentTimeString: currentTimeString, primaryTarget: target1.format('HH:mm'), 
       secondaryTarget: target2.format('HH:mm'),
-      primaryLength: Math.floor(moment.duration(target1.diff(currentStartTime)).asMinutes())/60,
-      secondaryLength: Math.floor(moment.duration(target2.diff(currentStartTime)).asMinutes())/60
+      primaryLength: length,
+      secondaryLength: length+0.5
     });
   }
   
