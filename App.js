@@ -4,7 +4,8 @@ import {
   Platform,
   StyleSheet,
   Text,
-  View
+  View,
+  StatusBar
 } from 'react-native';
 import _ from 'lodash';
 import moment from 'moment';
@@ -96,6 +97,7 @@ export default class App extends Component {
   render() {
     return (
       <View style={styles.container}>
+        <StatusBar backgroundColor="#3F6B9C"/>
         <View style={styles.currentDay}>
           <Text style={styles.header}>
             {this.state.currentDate}
