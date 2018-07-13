@@ -15,32 +15,25 @@ export default class App extends Component {
     this.state = { arrivalTimes: []}
   }
 
-  async updateTimeData() {
-    console.log("testing");
-    let data = [];
+  async componentDidMount() {
+    await this.updateTimeData();
+  }
+
+  async updateTimeData() {  
     const currentDate = moment(new Date()).format('dddd DD.MM.');
+    const currentTimeJson = new Date().toJSON();   
+    const result = await this.readData(currentTimeJson);
+    
     let currentStartTime;
-    const currentTimeJson = new Date().toJSON();
-    try {      
-      const value = await AsyncStorage.getItem('times');
-      console.log(value);
-      let timeData = [];
-      if (value !== null) {
-        timeData = JSON.parse(value);  
-      }
-      timeData.push(currentTimeJson);
-      console.log(timeData);
-      await AsyncStorage.setItem('times', JSON.stringify(timeData));
-      var grouped = _.groupBy(timeData, d => d.slice(0,10));
-      Object.keys(grouped).forEach(function(key, index) {
-        if (key !== currentTimeJson.slice(0,10))
-          data.push(moment(grouped[key][0]).format('dddd DD.MM HH:mm'));
-        else
-          currentStartTime = moment(grouped[key][0]);
-      });
-    } catch (error) {
-        console.log(error);
+    if (_.isUndefined(result.currentStartTime))
+    {
+      await this.storeNewTime(result.data, currentTimeJson);
+      currentStartTime = moment(currentTimeJson);
     }
+    else{
+      currentStartTime = result.currentStartTime;
+    }    
+
     const currentTimeString = currentStartTime.format('HH:mm') + " - " + currentStartTime.clone().add(480, 'minutes').format('HH:mm');
     const minutes = moment.duration(moment(currentTimeJson).diff(currentStartTime)).asMinutes();
     const baseLength = Math.floor(minutes / 30)*30;
@@ -52,16 +45,44 @@ export default class App extends Component {
     if (length > 4.0)
       length -= 0.5;
 
-    this.setState({ arrivalTimes: data, currentDate: currentDate, 
+    this.setState({ arrivalTimes: result.data, currentDate: currentDate, 
       currentTimeString: currentTimeString, primaryTarget: target1.format('HH:mm'), 
       secondaryTarget: target2.format('HH:mm'),
       primaryLength: length,
       secondaryLength: length+0.5
     });
   }
-  
-  async componentDidMount() {
-    await this.updateTimeData();
+
+  async readData(currentTimeJson)
+  {
+    let data = [];
+    let currentStartTime;
+
+    try {      
+      const value = await AsyncStorage.getItem('times');
+      let timeData = [];
+      if (value !== null) {
+        timeData = JSON.parse(value);  
+      }    
+      
+      let grouped = _.groupBy(timeData, d => d.slice(0,10));
+      Object.keys(grouped).forEach(function(key, index) {
+        if (key !== currentTimeJson.slice(0,10))
+          data.push(moment(grouped[key][0]).format('dddd DD.MM HH:mm'));
+        else
+          currentStartTime = moment(grouped[key][0]);
+      });
+    } catch (error) {
+        console.log(error);
+    }
+
+    return {data: data, currentStartTime: currentStartTime};
+  }
+
+  async storeNewTime(oldTimeData, newTimeJson)
+  {
+    oldTimeData.push(newTimeJson);
+    await AsyncStorage.setItem('times', JSON.stringify(oldTimeData));
   }
 
   render() {
@@ -100,7 +121,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   currentDay: {
-    backgroundColor: '#64B5F6',
+    backgroundColor: '#039BE5',
     alignSelf: 'stretch',
     padding: 10,
   },
@@ -108,11 +129,13 @@ const styles = StyleSheet.create({
     fontSize: 22,
     textAlign: 'center',
     margin: 10,
+    color: 'white',
   },
   headerDetail: {
     fontSize: 16,
     textAlign: 'center',
     margin: 3,
+    color: 'white',
   },
   startTime: {
     textAlign: 'center',
