@@ -14,7 +14,7 @@ export default class App extends Component {
   constructor(props){
     super(props);
     this.state = { arrivalTimes: []}
-    this.dataKey = 'start-times';
+    this.dataKey = 'arrival-times';
   }
 
   async componentDidMount() {
@@ -28,7 +28,7 @@ export default class App extends Component {
     let currentStartTime;
     if (_.isUndefined(result.currentStartTime))
     {
-      await this.storeNewTime(result.data, currentTimeJson);
+      await this.storeNewTime(result.rawData, currentTimeJson);
       currentStartTime = moment(currentTimeJson);
     }
     else{
@@ -37,7 +37,7 @@ export default class App extends Component {
 
     const times = this.calculateTimes(currentStartTime, currentTimeJson);
 
-    this.setState({ arrivalTimes: result.data, currentDate: moment(new Date()).format('dddd DD.MM.'), 
+    this.setState({ arrivalTimes: result.formatedData, currentDate: moment(currentTimeJson).format('dddd DD.MM.'), 
       currentTimeString: times.currentTimeString, primaryTarget: times.primaryTarget.format('HH:mm'), 
       secondaryTarget: times.secondaryTarget.format('HH:mm'),
       primaryLength: times.length,
@@ -47,36 +47,35 @@ export default class App extends Component {
 
   async readData(currentTimeJson)
   {
+    let rawData = [];
     let data = [];
     let currentStartTime;
 
     try {      
       const value = await AsyncStorage.getItem(this.dataKey);
-      let timeData = [];
       if (value !== null) {
-        timeData = JSON.parse(value);
+        rawData = JSON.parse(value);
 
-        data = timeData.reverse();
+        data = rawData.slice(0).reverse();
         if (data.length > 0 && data[0].slice(0,10) == currentTimeJson.slice(0,10))
         {
           currentStartTime = moment(data[0]);
           data.shift();
         }
         
-        data = data.map(d => moment(d).format('dddd DD.MM HH:mm'));
+        data = data.map(d => moment(d).format('dddd DD.MM. HH:mm'));
       }
     } catch (error) {
         console.log(error);
     }
 
-    return {data: data, currentStartTime: currentStartTime};
+    return {rawData: rawData, formatedData: data, currentStartTime: currentStartTime};
   }
 
-  async storeNewTime(oldTimeData, newTimeJson)
+  async storeNewTime(rawTimeData, newTimeJson)
   {
-    let clonedTimeData = oldTimeData.slice(0);
-    clonedTimeData.push(newTimeJson);
-    await AsyncStorage.setItem(this.dataKey, JSON.stringify(clonedTimeData));
+    rawTimeData.push(newTimeJson);
+    await AsyncStorage.setItem(this.dataKey, JSON.stringify(rawTimeData));
   }
 
   calculateTimes(currentStartTime, currentTimeJson) {
